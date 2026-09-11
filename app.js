@@ -62,7 +62,7 @@ function applyFilters() {
 /* ---------- board ---------- */
 function renderBoard() {
   const groups = $("#board-groups"), nodes = $("#board-nodes"); groups.innerHTML = ""; nodes.innerHTML = ""; layout = {};
-  const W = 210, H = 96, GAPX = 14, GAPY = 12, COLS = 3, PAD = 12, HEAD = 42, GGAP = 26;
+  const W = 210, H = 96, GAPX = 14, GAPY = 12, COLS = 3, PAD = 12, HEAD = 66, GGAP = 26;
   const byWs = {}; D.workstreams.forEach(w => byWs[w.id] = []);
   D.tasks.forEach(t => (byWs[t.workstream] = byWs[t.workstream] || []).push(t));
   const order = D.workstreams.map(w => w.id).filter(id => byWs[id] && byWs[id].length);
