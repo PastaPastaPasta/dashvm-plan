@@ -9,6 +9,9 @@ let cam = {x: 40, y: 40, k: 1}, layout = {}, edgeMode = "selected";
 async function load() {
   const r = await fetch("data.json?t=" + Date.now(), {cache: "no-store"});
   D = await r.json();
+  // the runner stamps data.json with a hash of the page's own files; when it changes, an open tab reloads so it
+  // never renders new data with old code (GitHub Pages caches scripts for 10 minutes)
+  if (D.site_version) { const prev = sessionStorage.getItem("site_version"); sessionStorage.setItem("site_version", D.site_version); if (prev && prev !== D.site_version) { location.reload(); return; } }
   D.tasks.forEach(t => tasksById[t.id] = t);
   render();
   const age = (Date.now() - Date.parse(D.generated_at)) / 60000;
