@@ -140,12 +140,69 @@ function renderInspector() {
   <dt>Pull request</dt><dd>${pr}</dd>${parts}
   <dt>Depends on</dt><dd>${deps}</dd><dt>Enables</dt><dd>${enables}</dd>
   <dt>Cost</dt><dd>$${t.cost_usd || 0}</dd></dl>
-  ${t.plan_summary ? `<span class="eyebrow">PLAN</span><div class="box">${esc(t.plan_summary)}</div>` : ""}
+  ${t.plan_summary || t.plan_file ? `<div class="plan-row"><span class="eyebrow">PLAN</span>${t.plan_file ? `<button id="open-plan" data-file="${t.plan_file}" data-id="${t.id}">View full plan</button>` : ""}</div>${t.plan_summary ? `<div class="box clamp" id="plan-box">${esc(t.plan_summary)}</div><button class="text-button" id="plan-more">Show summary in full</button>` : ""}` : ""}
   ${t.review_summary ? `<span class="eyebrow">REVIEW</span><div class="box">consensus ${t.review_summary.consensus} · ${t.review_summary.findings} findings · ${t.review_summary.rounds} rounds${(t.review_summary.open || []).length ? "\nopen: " + esc(JSON.stringify(t.review_summary.open)) : ""}</div>` : ""}
   ${(t.notes || []).length ? `<span class="eyebrow">NOTES</span><div class="box">${t.notes.map(esc).join("\n")}</div>` : ""}
   <span class="eyebrow">ACCEPTANCE</span><div class="box">${esc(t.acceptance || "")}</div>
   <span class="eyebrow">HISTORY</span>${hist || '<div class="hist">no transitions yet</div>'}</div>`;
   $("#task-detail").querySelectorAll("[data-sel]").forEach(a => a.onclick = e => { e.preventDefault(); select(a.dataset.sel); });
+  const more = $("#plan-more"); if (more) more.onclick = () => { $("#plan-box").classList.toggle("clamp"); more.textContent = $("#plan-box").classList.contains("clamp") ? "Show summary in full" : "Collapse summary"; };
+  const open = $("#open-plan"); if (open) open.onclick = () => openPlan(open.dataset.id, open.dataset.file);
+}
+/* ---------- full plan modal ---------- */
+async function openPlan(id, file) {
+  const t = tasksById[id];
+  $("#modal-title").textContent = `${id} · ${t ? t.title : ""}`;
+  $("#modal-raw").href = file;
+  $("#modal-body").innerHTML = '<p class="secondary">Loading plan…</p>';
+  $("#modal").hidden = false; document.body.style.overflow = "hidden";
+  try {
+    const r = await fetch(file + "?t=" + Date.now()); if (!r.ok) throw new Error(r.status);
+    $("#modal-body").innerHTML = md(await r.text()); $("#modal-body").scrollTop = 0;
+  } catch (e) { $("#modal-body").innerHTML = `<p class="secondary">Could not load ${esc(file)} (${esc(String(e.message || e))}). The plan is published after the tick that captured it.</p>`; }
+}
+function closeModal() { $("#modal").hidden = true; document.body.style.overflow = ""; }
+$("#modal-close").onclick = closeModal; $("#modal").onclick = e => { if (e.target === $("#modal")) closeModal(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) closeModal(); });
+function inline(s) {
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<i>$2</i>");
+  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function md(src) {
+  const lines = src.replace(/\r/g, "").split("\n"); const out = []; let i = 0;
+  const flushPara = p => { if (p.length) out.push(`<p>${inline(p.join(" "))}</p>`); p.length = 0; };
+  let para = [];
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^```/.test(l)) { flushPara(para); const buf = []; i++; while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]); i++; out.push(`<pre><code>${esc(buf.join("\n"))}</code></pre>`); continue; }
+    const h = /^(#{1,6})\s+(.*)$/.exec(l);
+    if (h) { flushPara(para); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
+    if (/^\s*([-*_])\s*\1\s*\1[\s-*_]*$/.test(l)) { flushPara(para); out.push("<hr>"); i++; continue; }
+    if (/^\|/.test(l) && i + 1 < lines.length && /^\|?\s*:?-{2,}/.test(lines[i + 1])) {
+      flushPara(para); const cells = r => r.replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      const head = cells(l); i += 2; const rows = [];
+      while (i < lines.length && /^\|/.test(lines[i])) rows.push(cells(lines[i++]));
+      out.push(`<table><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`); continue;
+    }
+    const li = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(l);
+    if (li) {
+      flushPara(para); const ordered = /\d/.test(li[2]); const tag = ordered ? "ol" : "ul"; const items = []; const baseIndent = li[1].length;
+      while (i < lines.length) {
+        const m = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(lines[i]);
+        if (m && m[1].length <= baseIndent) { items.push(m[3]); i++; }
+        else if (lines[i].trim() && (m ? m[1].length > baseIndent : /^\s+/.test(lines[i]))) { items[items.length - 1] += "\n" + lines[i].trim(); i++; }
+        else break;
+      }
+      out.push(`<${tag}>${items.map(x => `<li>${inline(x).replace(/\n/g, "<br>")}</li>`).join("")}</${tag}>`); continue;
+    }
+    if (/^>\s?/.test(l)) { flushPara(para); const buf = []; while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, "")); out.push(`<blockquote>${inline(buf.join(" "))}</blockquote>`); continue; }
+    if (!l.trim()) { flushPara(para); i++; continue; }
+    para.push(l); i++;
+  }
+  flushPara(para); return out.join("\n");
 }
 $("#close-inspector").onclick = () => { selected = null; document.querySelectorAll(".node.selected").forEach(n => n.classList.remove("selected")); drawEdges(); renderInspector(); };
 /* ---------- dependencies view ---------- */
