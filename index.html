@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DashVM · Implementation plan</title>
+<meta name="description" content="Live board for the Dash Platform smart-contract plan: every task, dependency, capability, lane and pull request, updated from the delivery runner.">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="header">
+  <a class="brand" href="#board"><span class="brand-mark">D</span><span><strong>DashVM</strong><span class="brand-divider">/</span>Implementation plan</span></a>
+  <div class="header-actions">
+    <a class="source-link" href="https://github.com/dashpay/platform/issues/4626" target="_blank" rel="noopener">Issue #4626 ↗</a>
+    <a class="source-link" href="https://github.com/dashpay/dips/pull/190" target="_blank" rel="noopener">DIP series ↗</a>
+    <span id="freshness" class="sync-pill" title="When the runner last published this page">…</span>
+    <button id="theme" class="icon-button" title="Switch colour theme">◐</button>
+  </div>
+</header>
+
+<div class="workspace-heading">
+  <div><span class="eyebrow">SMART CONTRACTS</span><h1>Implementation plan</h1><p id="subtitle" class="secondary"></p></div>
+  <div id="overview-counts" class="overview-counts"></div>
+</div>
+<div id="release-summary" class="release-summary"></div>
+<div id="active-strip" class="active-strip"></div>
+
+<div class="navigation-row">
+  <nav class="tabs" role="tablist">
+    <button data-view="board" class="active">Board <span class="tab-count" id="count-board"></span></button>
+    <button data-view="deps">Dependencies</button>
+    <button data-view="table">Table</button>
+    <button data-view="cap">Capabilities <span class="tab-count" id="count-cap"></span></button>
+    <button data-view="activity">Activity</button>
+  </nav>
+  <span id="plan-meta" class="plan-meta"></span>
+</div>
+
+<main id="workspace">
+<div class="toolbar">
+  <div class="search-wrap"><span>⌕</span><input id="task-search" type="search" placeholder="Find a task, ID, module or workstream…"></div>
+  <select id="group-filter"><option value="all">All workstreams</option></select>
+  <select id="release-filter"><option value="all">All releases</option><option value="4.3-dev">4.3-dev</option><option value="4.4-dev">4.4-dev</option><option value="5.0-dev">5.0-dev</option></select>
+  <select id="status-filter"><option value="all">All statuses</option></select>
+  <span id="match-count" class="match-count"></span>
+  <button id="reset-filters" class="text-button" hidden>Clear</button>
+</div>
+
+<div id="work-area" class="work-area">
+<div class="main-surface">
+
+<section id="view-board" class="view board-view">
+  <div class="board-top"><div><strong>All workstreams</strong><span class="secondary">Filters highlight matches. Click a task for details.</span></div>
+    <label class="compact-label">Connections <select id="edge-mode"><option value="selected">Selected task</option><option value="all">All</option><option value="none">Hidden</option></select></label></div>
+  <div id="board" class="board" tabindex="0"><div id="world" class="world"><svg id="board-edges"></svg><div id="board-groups"></div><div id="board-nodes"></div></div>
+    <div class="board-hint">Drag to pan · Scroll to zoom · Click a task</div>
+    <div class="zoom-controls"><button id="zoom-out">−</button><button id="zoom-label" title="Reset zoom">100%</button><button id="zoom-in">+</button><span></span><button id="fit-board">Fit all</button><button id="focus-task">Focus</button></div>
+  </div>
+  <div class="surface-footer"><span id="board-caption"></span><div class="legend" id="legend"></div></div>
+</section>
+
+<section id="view-deps" class="view padded-view" hidden>
+  <div class="section-heading"><div><span class="eyebrow">DEPENDENCIES</span><h2>Task dependencies</h2></div>
+    <label class="compact-label">Task <select id="deps-task"></select></label></div>
+  <div id="deps-summary"></div>
+  <div class="mpm-scroll"><svg id="deps-graph" class="mpm-graph"></svg></div>
+  <p class="secondary">Arrows point from prerequisite to dependent. 6 edges are owner-stated, 228 are inferred proposals; waived edges are shown dashed.</p>
+</section>
+
+<section id="view-table" class="view padded-view" hidden>
+  <div class="section-heading"><div><span class="eyebrow">TABLE</span><h2>Every task</h2></div><span class="quiet-pill" id="table-note"></span></div>
+  <div id="table-rows" class="table-scroll"></div>
+</section>
+
+<section id="view-cap" class="view capability-view" hidden>
+  <aside class="cap-list-panel">
+    <label class="search-wrap"><span>⌕</span><input id="cap-search" type="search" placeholder="Find a capability…"></label>
+    <select id="cap-group"><option value="all">All capability groups</option></select>
+    <div id="cap-list" class="cap-list"></div>
+  </aside>
+  <article id="cap-detail" class="cap-detail"></article>
+</section>
+
+<section id="view-activity" class="view padded-view" hidden>
+  <div class="section-heading"><div><span class="eyebrow">ACTIVITY</span><h2>Recent events</h2></div><span class="quiet-pill" id="activity-note"></span></div>
+  <div id="attention" class="attention"></div>
+  <div id="activity-rows" class="table-scroll"></div>
+</section>
+
+</div>
+<aside id="inspector" class="inspector" hidden>
+  <div class="inspector-top"><span class="eyebrow">TASK DETAILS</span><button id="close-inspector" class="icon-button">×</button></div>
+  <div id="task-detail"></div>
+</aside>
+</div>
+</main>
+<footer class="footer"><span id="footer-caption"></span><span class="secondary">Generated by the DashVM delivery runner from its state file after every tick. PR status comes from the runner's own GitHub sync, not from a search.</span></footer>
+<script src="app.js"></script>
+</body>
+</html>
